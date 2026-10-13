@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <sys/mman.h>  // For shm_open() and shm_unlink()
 #include <sys/wait.h>  // For wait()
+#include <stdlib.h>    // For exit()
 #include <fcntl.h>     // For oflags
 #include <errno.h>
 
@@ -15,9 +16,6 @@ int create_buf();
 
 int main ()
 { 
-/*  if (create_buf() == -1) return -1;
-*/
-  
   int pid = fork();
   int wstatus;
   if (pid == -1)                        // fork failed 
@@ -30,21 +28,29 @@ int main ()
     // create memory buffer
     printf ("Creating the memory object.\n");
     if (create_buf() == -1) return -1;
-    // write into the memory buffer
     
+    // write into the memory buffer
+    int integers [ARR_LENGTH] = {1, 2, 3, 4};
+
+    if (write(fd, integers, ARR_LENGTH) == -1)
+    {
+      fprintf (stderr, "Write returned an error: %d\n", errno); return -1;
+    }
+    printf ("Integers written into the memory object\n");
+    exit(EXIT_SUCCESS);
   }
   else                                  // Parent Process
   {
-    // wait for the proc to finish
-    do
+    do // wait for the proc to finish
     {
-      waitpid(pid, &wstatus, WNOHANG);
+      wait(NULL);
     }
-    while (!WIFEXITED(wstatus));
+    while (!WIFEXITED(wstatus) && !WIFSIGNALED(wstatus));
+
     printf ("In the Consumer Process.\n");
     // read from the buffer
+    printf ("reading...\n");
   }
-
   printf("Program exited successfully\n");
   return 0;
 }
