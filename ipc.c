@@ -1,37 +1,51 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/mman.h>  // For shm_open() and shm_unlink()
-#include <fcntl.h>    // For oflags
+#include <sys/wait.h>  // For wait()
+#include <fcntl.h>     // For oflags
 #include <errno.h>
 
 #define ARR_LENGTH 4
 #define ARR_SIZE (ARR_LENGTH * sizeof(int)) // sizeof(int) = 4 bytes
 
-int create_buf(); // returns the buf name
 int fd;
 char* buffer_path = "/buffer"; // the path to the buffer; will be used by the shm_open() and shm_unlink()
 
+int create_buf(); 
+
 int main ()
 { 
-  if (create_buf() == -1) return -1;
-  printf("Program exited successfully\n");
-
-  /*
+/*  if (create_buf() == -1) return -1;
+*/
+  
   int pid = fork();
-  if (pid == 0) // child proc
+  int wstatus;
+  if (pid == -1)                        // fork failed 
+  {
+    fprintf (stderr, "Fork failed with the error: %d\n", errno); return 1;
+  }
+  else if (pid == 0)                    // Child Process
   { 
+    printf ("In the Producer Process.\n");
     // create memory buffer
-    char* buffer = create_buf();
-    
+    printf ("Creating the memory object.\n");
+    if (create_buf() == -1) return -1;
     // write into the memory buffer
     
   }
-  else if (pid == 1) // parent proc
+  else                                  // Parent Process
   {
-    // wait for the proc to finish 
+    // wait for the proc to finish
+    do
+    {
+      waitpid(pid, &wstatus, WNOHANG);
+    }
+    while (!WIFEXITED(wstatus));
+    printf ("In the Consumer Process.\n");
     // read from the buffer
-  }*/
+  }
 
+  printf("Program exited successfully\n");
   return 0;
 }
 
